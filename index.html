@@ -46,7 +46,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .todo-top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
 .todo-month{font-size:13px;color:var(--text-sub);font-weight:600}
 .todo-icons{display:flex;gap:14px;color:var(--purple)}
-.todo-icons button{padding:4px;color:var(--purple);opacity:.7}
+.todo-icons button{padding:4px;color:var(--purple);opacity:.7;font-size:18px;line-height:1}
+.todo-icons button:active{opacity:1;transform:scale(.92)}
 .todo-date-row{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
 .todo-date{font-size:42px;font-weight:800;line-height:1;color:var(--purple)}
 .todo-weekday{font-size:42px;font-weight:800;color:var(--purple)}
@@ -165,6 +166,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .choice-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .choice-btn{padding:10px 16px;border-radius:12px;border:1.5px solid #e0e0e0;font-size:14px;font-weight:600;color:var(--purple)}
 .choice-btn.selected{background:var(--purple);color:#fff;border-color:var(--purple)}
+
+.insight-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.insight-stat{background:var(--pink-bg);border-radius:16px;padding:14px 8px;text-align:center}
+.insight-stat-num{font-size:28px;font-weight:800;color:var(--purple);line-height:1.1}
+.insight-stat-label{font-size:11px;color:var(--text-sub);margin-top:4px;font-weight:600}
+.insight-stat-sub{font-size:10px;color:var(--purple);margin-top:2px;font-weight:700}
+.progress-wrap{margin-bottom:20px}
+.progress-label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px;color:var(--purple)}
+.progress-bar{height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden}
+.progress-fill{height:100%;background:var(--purple);border-radius:5px;transition:width .3s}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:100px;margin:16px 0 8px;padding:0 4px}
+.chart-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar-fill{width:100%;background:var(--pink-light);border-radius:6px 6px 0 0;min-height:4px}
+.chart-bar-fill.high{background:var(--purple)}
+.chart-bar-label{font-size:10px;color:var(--text-sub);font-weight:600}
+.history-row{width:100%;display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;text-align:left}
+.history-date{min-width:52px;font-size:14px;font-weight:800;color:var(--purple)}
+.history-info{flex:1;min-width:0}
+.history-count{font-size:13px;font-weight:600}
+.history-sub{font-size:11px;color:var(--text-sub);margin-top:2px}
+.history-rate{font-size:13px;font-weight:800;color:var(--purple);min-width:40px;text-align:right}
+.history-empty,.insight-empty{text-align:center;padding:32px 12px;color:var(--text-sub);font-size:14px;line-height:1.6}
+.goal-ring-wrap{text-align:center;margin:8px 0 20px}
+.goal-ring{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:8px solid var(--pink-light);border-top-color:var(--purple);border-right-color:var(--purple)}
+.goal-ring-num{font-size:36px;font-weight:800;color:var(--purple);line-height:1}
+.goal-ring-label{font-size:12px;color:var(--text-sub);margin-top:4px;font-weight:600}
+.remain-list{margin-top:8px}
+.remain-item{font-size:14px;padding:10px 0;border-bottom:1px solid #f5f5f5;color:var(--text)}
 </style>
 </head>
 <body>
@@ -351,9 +380,9 @@ function renderTodo() {
       <div class="todo-top-row">
         <div class="todo-month">${d.getMonth()+1}月.${d.getFullYear()}</div>
         <div class="todo-icons">
-          <button type="button" aria-label="履歴" title="履歴">🕐</button>
-          <button type="button" aria-label="目標" title="目標">🎯</button>
-          <button type="button" aria-label="統計" title="統計">📊</button>
+          <button type="button" id="btn-history" aria-label="履歴" title="履歴">🕐</button>
+          <button type="button" id="btn-goals" aria-label="目標" title="目標">🎯</button>
+          <button type="button" id="btn-stats" aria-label="統計" title="統計">📊</button>
         </div>
       </div>
       <div class="todo-date-row">
@@ -427,7 +456,186 @@ function renderTodo() {
   if (state.deletedTasks.length) {
     document.getElementById('btn-restore').addEventListener('click', openRestoreModal);
   }
+  document.getElementById('btn-history').addEventListener('click', openHistoryModal);
+  document.getElementById('btn-goals').addEventListener('click', openGoalsModal);
+  document.getElementById('btn-stats').addEventListener('click', openStatsModal);
   bindTaskActions(el);
+}
+
+/* ===== TODO INSIGHTS ===== */
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+function tasksForDay(ds) {
+  const carry = state.tasks.filter(t => !t.done && t.date && t.date < ds);
+  const pending = state.tasks.filter(t => !t.done && t.date === ds);
+  const done = state.tasks.filter(t => t.done && (t.date === ds || (t.doneAt && t.doneAt.slice(0, 10) === ds)));
+  const total = carry.length + pending.length + done.length;
+  return { carry, pending, done, total, doneCount: done.length, pendingCount: carry.length + pending.length, rate: calcRate(done.length, total) };
+}
+
+function calcRate(done, total) {
+  return total ? Math.round(done / total * 100) : 0;
+}
+
+function periodRange(startDs, endDs) {
+  const done = state.tasks.filter(t => {
+    if (!t.done || !t.doneAt) return false;
+    const d = t.doneAt.slice(0, 10);
+    return d >= startDs && d <= endDs;
+  }).length;
+  const total = state.tasks.filter(t => {
+    if (t.date && t.date >= startDs && t.date <= endDs) return true;
+    if (t.done && t.doneAt) {
+      const d = t.doneAt.slice(0, 10);
+      if (d >= startDs && d <= endDs) return true;
+    }
+    return false;
+  }).length;
+  return { done, total, rate: calcRate(done, total) };
+}
+
+function getRecentDates(n) {
+  const dates = [];
+  const d = new Date();
+  for (let i = 0; i < n; i++) {
+    dates.push(dateStr(d));
+    d.setDate(d.getDate() - 1);
+  }
+  return dates;
+}
+
+function jumpToDate(ds) {
+  const today = todayStr();
+  const diff = Math.round((parseDate(ds) - parseDate(today)) / 86400000);
+  state.dayOffset = diff;
+  save();
+  closeModal();
+  renderTodo();
+}
+
+function openHistoryModal() {
+  const dates = getRecentDates(14).filter(ds => {
+    const s = tasksForDay(ds);
+    return s.total > 0;
+  });
+  const rows = dates.length ? dates.map(ds => {
+    const s = tasksForDay(ds);
+    const d = parseDate(ds);
+    const isToday = ds === todayStr();
+    const label = isToday ? '今日' : `${d.getMonth()+1}/${d.getDate()} (${DAY_NAMES[d.getDay()]})`;
+    return `
+      <button type="button" class="history-row" data-jump="${esc(ds)}">
+        <div class="history-date">${d.getDate()}日</div>
+        <div class="history-info">
+          <div class="history-count">${s.doneCount} / ${s.total} 件完了</div>
+          <div class="history-sub">${label}${s.pendingCount ? ` · 未完了 ${s.pendingCount}件` : ''}</div>
+        </div>
+        <div class="history-rate">${s.rate}%</div>
+      </button>`;
+  }).join('') : '<div class="history-empty">まだ履歴がありません<br>タスクを追加するとここに表示されます</div>';
+
+  openModal(`
+    <h3>🕐 履歴</h3>
+    <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px;line-height:1.5">過去14日分のタスク一覧。タップするとその日に移動します。</p>
+    ${rows}
+    <button type="button" class="modal-btn secondary" style="width:100%;margin-top:12px" id="modal-close">閉じる</button>`);
+
+  document.querySelectorAll('[data-jump]').forEach(btn => {
+    btn.onclick = () => jumpToDate(btn.dataset.jump);
+  });
+  document.getElementById('modal-close').onclick = closeModal;
+}
+
+function openGoalsModal() {
+  const ds = getViewDate();
+  const s = tasksForDay(ds);
+  const d = parseDate(ds);
+  const isToday = ds === todayStr();
+  const label = isToday ? '今日' : `${d.getMonth()+1}月${d.getDate()}日`;
+  const remain = [...s.carry, ...s.pending];
+
+  let msg = 'すべて完了！';
+  if (s.pendingCount > 0 && s.rate === 0) msg = 'さあ、はじめよう';
+  else if (s.pendingCount > 0) msg = `あと ${s.pendingCount} 件`;
+  else if (s.total === 0) msg = 'タスクを追加しましょう';
+
+  const remainHtml = remain.length
+    ? `<div class="remain-list">${remain.map(t => `<div class="remain-item">· ${esc(t.text)}</div>`).join('')}</div>`
+    : `<div class="insight-empty">${s.total ? 'お疲れさま！' : 'やることを追加してみて'}</div>`;
+
+  openModal(`
+    <h3>🎯 ${label}の目標</h3>
+    <div class="goal-ring-wrap">
+      <div class="goal-ring" style="border-top-color:${s.rate>=50?'var(--purple)':'var(--pink-light)'};border-right-color:${s.rate>=25?'var(--purple)':'var(--pink-light)'}">
+        <div class="goal-ring-num">${s.rate}%</div>
+        <div class="goal-ring-label">完了率</div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>${s.doneCount} / ${s.total} 件完了</span><span>${msg}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${s.rate}%"></div></div>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:8px">残りのタスク</div>
+    ${remainHtml}
+    <button type="button" class="modal-btn secondary" style="width:100%;margin-top:16px" id="modal-close">閉じる</button>`);
+  document.getElementById('modal-close').onclick = closeModal;
+}
+
+function openStatsModal() {
+  const today = todayStr();
+  const mon = getMonday(new Date());
+  const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+  const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-01`;
+
+  const todayS = tasksForDay(today);
+  const weekS = periodRange(dateStr(mon), dateStr(sun));
+  const monthS = periodRange(monthStart, today);
+
+  const chartDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const ds = addDaysStr(today, -i);
+    const day = tasksForDay(ds);
+    chartDays.push({ ds, rate: calcRate(day.doneCount, day.total), label: DAY_NAMES[parseDate(ds).getDay()] });
+  }
+  const maxRate = Math.max(...chartDays.map(c => c.rate), 1);
+
+  openModal(`
+    <h3>📊 統計</h3>
+    <div class="insight-stats">
+      <div class="insight-stat">
+        <div class="insight-stat-num">${todayS.rate}%</div>
+        <div class="insight-stat-label">きょう</div>
+        <div class="insight-stat-sub">${todayS.doneCount}/${todayS.total}件</div>
+      </div>
+      <div class="insight-stat">
+        <div class="insight-stat-num">${weekS.rate}%</div>
+        <div class="insight-stat-label">こんしゅう</div>
+        <div class="insight-stat-sub">${weekS.done}/${weekS.total}件</div>
+      </div>
+      <div class="insight-stat">
+        <div class="insight-stat-num">${monthS.rate}%</div>
+        <div class="insight-stat-label">こんげつ</div>
+        <div class="insight-stat-sub">${monthS.done}/${monthS.total}件</div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:4px">直近7日間の完了率</div>
+    <div class="chart-bars">
+      ${chartDays.map(c => {
+        const h = Math.max(8, Math.round(c.rate / maxRate * 80));
+        return `<div class="chart-bar">
+          <div class="chart-bar-fill${c.rate>=50?' high':''}" style="height:${h}px"></div>
+          <div class="chart-bar-label">${c.label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button type="button" class="modal-btn secondary" style="width:100%;margin-top:12px" id="modal-close">閉じる</button>`);
+  document.getElementById('modal-close').onclick = closeModal;
 }
 
 function taskRowHtml(t, isCarry, forceDone) {
@@ -744,6 +952,7 @@ function openModal(html) {
   document.getElementById('modal-overlay').onclick = e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
   };
+  document.getElementById('modal-content').onclick = e => e.stopPropagation();
 }
 
 function closeModal() {
