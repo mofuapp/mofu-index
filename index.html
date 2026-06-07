@@ -422,7 +422,7 @@ function renderTodo() {
       <button type="button" class="toggle-pill${state.hideDone?' off':''}" id="toggle-done" aria-label="完了を表示"></button>
       <div class="footer-center">
         <div class="day-dots" id="day-dots"></div>
-        <button type="button" class="day-nav-btn" id="btn-goto-today" title="今日へ">→</button>
+        <button type="button" class="day-nav-btn" id="btn-next-day" title="翌日">→</button>
       </div>
     </div>`;
 
@@ -441,8 +441,8 @@ function renderTodo() {
     save();
     renderTodo();
   });
-  document.getElementById('btn-goto-today').addEventListener('click', () => {
-    state.dayOffset = 0;
+  document.getElementById('btn-next-day').addEventListener('click', () => {
+    state.dayOffset += 1;
     save();
     renderTodo();
   });
