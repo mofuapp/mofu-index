@@ -1,0 +1,11 @@
+{
+  "name": "mofu index",
+  "short_name": "mofu index",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E8887A",
+  "icons": [
+    { "src": "icon-192.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
