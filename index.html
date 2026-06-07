@@ -74,15 +74,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .todo-empty{text-align:center;padding:48px 20px;color:var(--text-sub);font-size:14px}
 .restore-link{display:block;text-align:right;font-size:12px;color:var(--text-sub);margin-top:12px;padding:4px 0}
 
-.todo-footer{position:absolute;bottom:0;left:0;right:0;padding:12px 20px calc(12px + var(--safe-bottom));display:flex;align-items:center;justify-content:space-between;background:linear-gradient(transparent,#fff 30%)}
-.toggle-pill{width:52px;height:28px;border-radius:14px;background:var(--purple);position:relative;transition:.2s}
+.todo-footer{position:absolute;bottom:0;left:0;right:0;padding:12px 76px calc(12px + var(--safe-bottom)) 20px;display:flex;align-items:center;gap:12px;background:linear-gradient(transparent,#fff 30%);pointer-events:none}
+.todo-footer > *{pointer-events:auto}
+.footer-center{display:flex;align-items:center;justify-content:center;gap:8px;flex:1;min-width:0}
+.toggle-pill{width:52px;height:28px;border-radius:14px;background:var(--purple);position:relative;transition:.2s;flex-shrink:0}
 .toggle-pill.off{background:#ddd}
 .toggle-pill::after{content:'−';position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--purple);transition:.2s;line-height:22px;text-align:center}
 .toggle-pill.off::after{content:'+';left:27px;color:#999}
 .day-dots{display:flex;align-items:center;gap:6px}
 .day-dot{width:6px;height:6px;border-radius:50%;background:#ddd}
 .day-dot.active{background:var(--purple);width:8px;height:8px}
-.day-nav-btn{width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;margin-left:8px}
+.day-nav-btn{width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
 /* ===== ROUTINE / EVENT HEADERS ===== */
 .page-header{padding:24px 20px 0;flex-shrink:0}
@@ -141,7 +143,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 .settings-item span{color:var(--text-sub);font-weight:400}
 
 /* ===== FAB ===== */
-.fab{position:absolute;bottom:calc(20px + var(--safe-bottom));right:20px;width:56px;height:56px;border-radius:50%;background:var(--purple);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,46,90,.35);z-index:20;transition:.2s}
+.fab{position:absolute;bottom:calc(12px + var(--safe-bottom));right:16px;width:56px;height:56px;border-radius:50%;background:var(--purple);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,46,90,.35);z-index:30;transition:.2s}
 .fab:active{transform:scale(.92)}
 
 /* ===== MODAL ===== */
@@ -389,8 +391,10 @@ function renderTodo() {
     </div>
     <div class="todo-footer">
       <button type="button" class="toggle-pill${state.hideDone?' off':''}" id="toggle-done" aria-label="完了を表示"></button>
-      <div class="day-dots" id="day-dots"></div>
-      <button type="button" class="day-nav-btn" id="btn-goto-today" title="今日へ">→</button>
+      <div class="footer-center">
+        <div class="day-dots" id="day-dots"></div>
+        <button type="button" class="day-nav-btn" id="btn-goto-today" title="今日へ">→</button>
+      </div>
     </div>`;
 
   el.innerHTML = html;
