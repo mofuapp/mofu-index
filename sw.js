@@ -1,12 +1,5 @@
-const CACHE = 'mofu-index-v9';
-const ASSETS = [
-  './index.html',
-  './manifest.json',
-  './icon-192.svg',
-  './icon-192.png',
-  './icon-512.png',
-  './apple-touch-icon.png'
-];
+const CACHE = 'mofu-index-v10';
+const ASSETS = ['./index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -21,17 +14,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  if (/\.(png|svg|json|jpg|webp)(\?|$)/.test(url.pathname)) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        const url = new URL(e.request.url);
-        if (url.pathname.endsWith('.png') || url.pathname.endsWith('.svg') || url.pathname.endsWith('manifest.json')) {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return res;
-      }).catch(() => cached);
-    })
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
